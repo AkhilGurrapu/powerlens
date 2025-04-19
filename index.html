@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power BI License Calculator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="calculator-container">
+        <h1>Power BI License Calculator</h1>
+
+        <div id="wizard-steps">
+            <!-- Step 1: Basic Usage & Scale -->
+            <div class="wizard-step active" id="step-1">
+                <h2>Step 1: Basic Usage & Scale</h2>
+                <div class="question">
+                    <label for="num-viewers">How many people will primarily *view* Power BI reports?</label>
+                    <input type="number" id="num-viewers" min="0" value="0">
+                    <p class="help-text">Estimate the total number of unique individuals who will consume reports.</p>
+                </div>
+                <div class="question">
+                    <label for="num-publishers">How many people will *create and publish* reports?</label>
+                    <input type="number" id="num-publishers" min="0" value="0">
+                    <p class="help-text">Include developers, analysts, and anyone who builds or shares reports.</p>
+                </div>
+                <button onclick="nextStep(1)">Next</button>
+            </div>
+
+            <!-- Step 2: Embedding Needs -->
+            <div class="wizard-step" id="step-2">
+                <h2>Step 2: Embedding Needs</h2>
+                <div class="question">
+                    <label>Will you embed Power BI reports into other applications or websites?</label>
+                    <div class="options">
+                        <button onclick="setEmbedding(true)">Yes</button>
+                        <button onclick="setEmbedding(false)">No</button>
+                    </div>
+                </div>
+                <div id="embedding-details" style="display: none;">
+                    <div class="question">
+                         <label>Who are the main users of these *embedded* reports?</label>
+                         <div class="options" id="embed-target">
+                             <button data-value="internal">People inside my organization</button>
+                             <button data-value="external">Customers/Partners outside my organization</button>
+                             <button data-value="mix">A mix of both</button>
+                         </div>
+                    </div>
+                     <div class="question" id="internal-access-question" style="display: none;">
+                         <label>Will these *internal* users also need to access reports directly on the Power BI website (powerbi.com)?</label>
+                         <div class="options" id="internal-needs-portal">
+                             <button data-value="true">Yes</button>
+                             <button data-value="false">No</button>
+                         </div>
+                    </div>
+                </div>
+                 <button onclick="prevStep(2)">Back</button>
+                 <button onclick="nextStep(2)">Next</button>
+            </div>
+
+            <!-- Step 3: Data & Feature Requirements -->
+            <div class="wizard-step" id="step-3">
+                <h2>Step 3: Data & Feature Requirements</h2>
+                <div class="question">
+                    <label>What is the expected maximum size of a *single* data model?</label>
+                     <div class="options" id="model-size">
+                         <button data-value="<1GB">&lt; 1 GB</button>
+                         <button data-value="1GB-10GB">1 GB - 10 GB</button>
+                         <button data-value="10GB-100GB">10 GB - 100 GB</button>
+                         <button data-value=">100GB">&gt; 100 GB</button>
+                     </div>
+                </div>
+                 <div class="question">
+                     <label>Do you need specific advanced features? (Select all that apply)</label>
+                     <div class="checkbox-group" id="premium-features">
+                         <label><input type="checkbox" value="ai"> AI-powered insights (Copilot, etc.)</label>
+                         <label><input type="checkbox" value="highRefresh"> Data refreshes > 8 times/day</label>
+                         <label><input type="checkbox" value="xmla"> Allow external tools (Excel, etc.) to connect to datasets (XMLA)</label>
+                         <label><input type="checkbox" value="pipelines"> Deployment Pipelines (Dev/Test/Prod)</label>
+                         <label><input type="checkbox" value="reportServer"> Host reports on your own servers (On-Premises)</label>
+                         <label><input type="checkbox" value="unlimitedSharing"> Distribute reports to a very large number of viewers (>350-500) without individual licenses</label>
+                         <!-- Add more features as needed -->
+                     </div>
+                 </div>
+                 <button onclick="prevStep(3)">Back</button>
+                 <button onclick="nextStep(3)">Next</button>
+            </div>
+
+             <!-- Step 4: (Optional) Advanced/Cost Tuning -->
+             <div class="wizard-step" id="step-4">
+                 <h2>Step 4: Cost Considerations (Optional)</h2>
+                 <div class="question">
+                    <label>Do many of your users already have Microsoft 365 E5 licenses?</label>
+                     <div class="options" id="e5-licenses">
+                         <button data-value="yes">Yes</button>
+                         <button data-value="no">No</button>
+                         <button data-value="unknown">Don't Know</button>
+                     </div>
+                 </div>
+                 <button onclick="prevStep(4)">Back</button>
+                 <button onclick="showResults()">Calculate License</button>
+            </div>
+        </div>
+
+        <div id="results" style="display: none;">
+            <h2>Recommendation</h2>
+            <div id="recommendation-output">
+                <!-- Results will be populated here by JavaScript -->
+            </div>
+             <button onclick="resetCalculator()">Start Over</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 

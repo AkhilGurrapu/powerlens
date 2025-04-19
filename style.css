@@ -1,0 +1,180 @@
+/* Basic Reset */
+body, h1, h2, div, button, input, label, p {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f4f4f4; /* Light gray background */
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.calculator-container {
+    background-color: #fff; /* White container background */
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    max-width: 700px;
+    width: 100%;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 30px;
+    /* Potential Power BI Theme Color */
+    /* color: #F2C811; */
+}
+
+.wizard-step {
+    display: none; /* Hide steps by default */
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+    margin-top: 20px;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.wizard-step.active {
+    display: block; /* Show active step */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+h2 {
+    color: #555;
+    margin-bottom: 20px;
+}
+
+.question {
+    margin-bottom: 25px;
+}
+
+.question label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #444;
+}
+
+input[type="number"] {
+    width: 100px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.help-text {
+    font-size: 0.9em;
+    color: #777;
+    margin-top: 5px;
+}
+
+.options {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+button {
+    padding: 10px 15px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #0078d4; /* Standard Blue */
+    color: white;
+    transition: background-color 0.2s ease;
+}
+
+/* Power BI Yellow Theme Button Example */
+/*
+button {
+    background-color: #F2C811; 
+    color: #333;
+    border: 1px solid #e6b90a;
+}
+button:hover {
+    background-color: #e6b90a;
+}
+*/
+
+button:hover {
+    background-color: #005a9e; /* Darker blue on hover */
+}
+
+.options button {
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+.options button.selected {
+    background-color: #0078d4; /* Blue for selected */
+    color: white;
+    border-color: #005a9e;
+    font-weight: bold;
+}
+
+.options button:hover:not(.selected) {
+    background-color: #e0e0e0;
+}
+
+
+.checkbox-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: normal;
+    color: #333;
+}
+
+.checkbox-group input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+
+#results {
+    margin-top: 30px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+
+#results h2 {
+    margin-bottom: 15px;
+}
+
+#recommendation-output p {
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+
+#recommendation-output strong {
+     display: block;
+     margin-bottom: 5px;
+     color: #0078d4; /* Theme color */
+}
+
+#recommendation-output ul {
+    list-style: disc;
+    margin-left: 20px;
+    margin-bottom: 10px;
+}
+
+.disclaimer {
+    font-size: 0.85em;
+    color: #888;
+    margin-top: 15px;
+    font-style: italic;
+} 
