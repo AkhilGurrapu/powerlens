@@ -1,15 +1,31 @@
 // --- Constants (Approximate values, clearly label as estimates) ---
-const PRO_COST = 10;
-const PPU_COST = 20;
-const PPU_E5_COST = 10; // PPU cost if user has M365 E5
-const F64_RESERVED_COST_APPROX = 5000; // Very rough estimate for comparison
+const PRO_COST = 14; // $14.00 user/month (paid yearly)
+const PPU_COST = 24; // $24.00 user/month (paid yearly)
+const PPU_E5_COST = 14; // $14.00 user/month add-on for Pro/M365 E5 users
 
-const CAPACITY_USER_THRESHOLD = 350; // Guideline: ~350+ viewers often justifies F64+
-const PPU_CAPACITY_THRESHOLD = 250; // Guideline: PPU might be cheaper than F64 below this user count
+// Fabric Capacity Reservation Costs (Central US, USD/Month, ~41% savings vs PAYG)
+const F2_RESERVED_COST = 156.33;
+const F4_RESERVED_COST = 312.67;
+const F8_RESERVED_COST = 625.33;
+const F16_RESERVED_COST = 1250.67;
+const F32_RESERVED_COST = 2501.33;
+const F64_RESERVED_COST = 5002.67; // Updated based on provided table
+const F128_RESERVED_COST = 10005.33;
+const F256_RESERVED_COST = 20010.67;
+const F512_RESERVED_COST = 40021.33;
+const F1024_RESERVED_COST = 80042.67;
+const F2048_RESERVED_COST = 160085.33;
+
+// Keep the F64 approx cost for general comparison text if needed, but use specific value for calculations
+const F64_RESERVED_COST_APPROX = 5000;
+
+const CAPACITY_USER_THRESHOLD = 350; // Guideline: ~350+ viewers often justifies F64+ cost-wise vs Pro
+// PPU vs F64 threshold is complex due to E5 pricing, evaluate case-by-case in logic
+const PPU_CAPACITY_THRESHOLD = 210; // Rough guideline: ~210 users * $24 PPU > $5002 F64
 
 const PRO_MODEL_LIMIT_GB = 1;
-const PPU_MODEL_LIMIT_GB = 100; // Varies slightly, but good general limit
-// Fabric capacity model limits vary significantly by SKU (F2=0.5GB, F64=25GB, F2048=400GB), needs nuanced handling
+const PPU_MODEL_LIMIT_GB = 100;
+// Fabric capacity model limits vary by SKU (F64=25GB, F128=50GB, F256=100GB, F512=200GB etc)
 
 // --- User Input Data Store ---
 let userInput = {
@@ -138,6 +154,19 @@ function calculateRecommendation(input) {
         disclaimer: "This calculator provides guidance based on common scenarios. Licensing terms and pricing can change. Always consult official Microsoft documentation and pricing pages for definitive information."
     };
 
+    // Helper function to map feature keys to readable names
+    const getFeatureName = (key) => {
+        const names = {
+            'ai': 'AI-powered insights',
+            'highRefresh': 'Data refreshes > 8 times/day',
+            'xmla': 'External tools connectivity (XMLA)',
+            'pipelines': 'Deployment Pipelines',
+            'reportServer': 'On-Premises Hosting (Report Server)',
+            'unlimitedSharing': 'Unlimited Sharing (>350 viewers)'
+        };
+        return names[key] || key;
+    };
+
     // --- Determine necessary flags based on input ---
     const totalUsers = (input.numViewers || 0) + (input.numPublishers || 0);
     const needsPremiumFeatures = input.premiumFeatures.length > 0;
@@ -154,67 +183,69 @@ function calculateRecommendation(input) {
 
     // Main Decision Path (Following the Tree in Fig 2.3 & text)
     if (input.embedding === true) {
+        result.explanation.push("You indicated you need to embed reports.");
         // --- Embedding Scenarios ---
         if (input.embedTarget === 'external' || input.embedTarget === 'mix') {
             // Embedding for Customers (or Mix involving Customers) - A SKU or F SKU preferred
-            // A SKUs are pay-as-you-go, good for external only. F SKUs more versatile if internal access might be needed.
             result.recommendationText = "Fabric F SKU / Power BI Embedded A SKU";
-            result.explanation.push("Embedding for external customers requires a capacity-based license like Fabric F SKU or Embedded A SKU.");
+            result.explanation.push(`Embedding for external customers ('${input.embedTarget}' selected) requires a capacity-based license like Fabric F SKU or Embedded A SKU.`);
             result.explanation.push("F SKUs offer more flexibility if internal users might also need portal access in the future.");
             result.explanation.push("A SKUs offer pay-as-you-go pricing, suitable if pausing capacity is beneficial.");
             result.keyFeatures.push("Embedding for external users", "Capacity-based scaling");
             result.alternatives = "Choose A SKU for pure external embedding with pause capability. Choose F SKU for mixed scenarios or potential future internal portal access.";
-            // Publishers still need Pro
             result.breakdown.push(`${input.numPublishers} x Power BI Pro (~$${PRO_COST}/user/month) for publishers.`);
             result.breakdown.push("1 x Fabric F SKU (e.g., F8+) or Embedded A SKU (e.g., A1+) - Pricing varies by SKU and usage (PAYG/Reservation).");
             result.breakdown.push("End users (external) do not require individual Power BI licenses.");
         }
         else if (input.embedTarget === 'internal') {
+             result.explanation.push(`Embedding is for internal users ('${input.embedTarget}' selected).`);
             // Embedding for Internal Organization
             if (input.internalNeedsPortal === 'true') {
-                 // Internal users NEED portal access - Treat similarly to non-embedded scenarios based on scale/features
-                 result.explanation.push("Internal users require portal access alongside embedding.");
+                 result.explanation.push("Internal users require portal access (powerbi.com) alongside embedding.");
                 if (totalUsers > CAPACITY_USER_THRESHOLD || needsF64Features || needsHugeModel) {
                     result.recommendationText = "Fabric F64+ Capacity + Power BI Pro";
-                    result.explanation.push("Fabric F64+ capacity recommended due to high user count (>350), F64+ specific features (AI, Unlimited Sharing, Report Server), or very large models (>100GB).");
+                     if (totalUsers > CAPACITY_USER_THRESHOLD) result.explanation.push(`Fabric F64+ capacity recommended because the total user count (${totalUsers}) exceeds the typical threshold (${CAPACITY_USER_THRESHOLD}) for cost-effectiveness.`);
+                     if (needsF64Features) result.explanation.push(`Fabric F64+ capacity is needed because you selected F64-specific premium features: ${input.premiumFeatures.filter(f => ['ai', 'unlimitedSharing', 'reportServer'].includes(f)).map(getFeatureName).join(', ')}.`);
+                     if (needsHugeModel) result.explanation.push(`Fabric F64+ capacity (likely F256+) needed due to the very large maximum model size selected ('${input.maxModelSize}').`);
                     result.keyFeatures.push("Unlimited Sharing (Free license for viewers via portal)", "Supports large datasets", "Advanced AI features (if selected)", "48 Refreshes/day");
                     result.breakdown.push(`${input.numPublishers} x Power BI Pro (~$${PRO_COST}/user/month) for publishers.`);
                     result.breakdown.push(`1 x Fabric F64+ SKU (Reservation recommended, ~$${F64_RESERVED_COST_APPROX}/month starting price).`);
                     result.breakdown.push(`Viewers: Free license sufficient via Fabric Capacity for portal access.`);
-                     result.alternatives = "Lower F SKUs (e.g., F32) might be possible if only large models (10-100GB) or basic premium features are needed, but users would need Pro licenses.";
+                    result.alternatives = "Lower F SKUs (e.g., F32) might be possible if only large models (10-100GB) or basic premium features are needed, but viewers would need Pro licenses for portal access.";
                 } else if (needsPremiumFeatures || modelExceedsProLimit) {
                     result.recommendationText = "Power BI Premium Per User (PPU)";
                     let currentPpuCost = input.hasE5 === 'yes' ? PPU_E5_COST : PPU_COST;
-                    result.explanation.push("PPU recommended for premium features (incl. models >1GB) or advanced embedding needs with moderate user counts (<350) requiring portal access.");
+                    result.explanation.push(`PPU recommended because premium features or larger models are needed with moderate user counts (<${CAPACITY_USER_THRESHOLD}), and users require portal access.`);
+                     if (modelExceedsProLimit) result.explanation.push(`Specifically, the model size ('${input.maxModelSize}') exceeds the ${PRO_MODEL_LIMIT_GB}GB Pro limit.`);
+                     if (needsPremiumFeatures) result.explanation.push(`The following selected premium features require PPU or Capacity: ${input.premiumFeatures.map(getFeatureName).join(', ')}.`);
                     result.keyFeatures.push("Supports large datasets (up to 100GB)", "Most Premium Features (Advanced Dataflows, Pipelines, XMLA)", "48 Refreshes/day");
-                    result.breakdown.push(`${totalUsers} x Power BI PPU (~$${currentPpuCost}/user/month - price depends on M365 E5 status).`);
+                    result.breakdown.push(`${totalUsers} x Power BI PPU (~$${currentPpuCost}/user/month - cost is lower if users have M365 E5: You selected '${input.hasE5 || 'unknown'}').`);
                     publisherLicense = "PPU"; // Override publisher license
                 } else {
                     result.recommendationText = "Power BI Pro";
-                    result.explanation.push("Pro licenses required for all users (publishers and viewers) accessing embedded content and needing portal access, with standard features and models <= 1GB.");
+                    result.explanation.push(`Pro licenses recommended because standard features are sufficient (no premium features selected, model size '${input.maxModelSize || '<1GB'}'), and internal users need portal access.`);
                     result.keyFeatures.push("Basic Collaboration & Sharing", "Embed for Internal Users (with Pro license)");
                     result.breakdown.push(`${totalUsers} x Power BI Pro (~$${PRO_COST}/user/month).`);
                 }
             } else {
                 // Internal users DO NOT need portal access - Fabric F SKU (or deprecated EM)
                 result.recommendationText = "Fabric F SKU";
-                result.explanation.push("Embedding for internal users who do not need direct portal access can be achieved cost-effectively with Fabric F SKUs.");
-                result.explanation.push("Users accessing only the embedded report do not need individual licenses with this setup.");
+                result.explanation.push(`Embedding is for internal users who do not need direct portal access ('${input.internalNeedsPortal === 'false' ? 'No' : 'Not specified'}' selected for portal access).`);
+                result.explanation.push("Fabric F SKUs allow embedding without requiring individual licenses for users accessing *only* the embedded content.");
                 result.keyFeatures.push("Embedding for internal users without requiring user licenses", "Capacity-based scaling");
                 result.breakdown.push(`${input.numPublishers} x Power BI Pro (~$${PRO_COST}/user/month) for publishers.`);
-                result.breakdown.push("1 x Fabric F SKU (e.g., F2+) - Pricing varies by SKU and usage (PAYG/Reservation).");
+                result.breakdown.push("1 x Fabric F SKU (e.g., F2+) - Pricing varies by SKU and usage (PAYG/Reservation). Select SKU based on model size/compute needs.");
                 result.alternatives = "The deprecated EM SKUs were previously used here, but F SKUs are recommended. If users ever need portal access later, they would need Pro/PPU licenses or an upgrade to F64+.";
             }
         }
     } else {
         // --- Non-Embedding Scenarios ---
-         result.explanation.push("Scenario does not involve embedding reports in external applications.");
+         result.explanation.push("You indicated embedding is not required.");
         if (totalUsers > CAPACITY_USER_THRESHOLD || needsF64Features || needsHugeModel) {
             result.recommendationText = "Fabric F64+ Capacity + Power BI Pro";
-            result.explanation.push(`Fabric F64+ capacity recommended due to high user count (> ${CAPACITY_USER_THRESHOLD}), need for F64+ features (AI, Unlimited Sharing, Report Server), or very large models (>100GB).`);
-            if (totalUsers > CAPACITY_USER_THRESHOLD) result.explanation.push(`Enables 'Unlimited Sharing' where viewers only need a Free license.`);
-            if (needsF64Features) result.explanation.push(`Required for features like: ${input.premiumFeatures.filter(f => ['ai', 'unlimitedSharing', 'reportServer'].includes(f)).join(', ')}.`);
-            if (needsHugeModel) result.explanation.push("Required for models expected to exceed 100GB.");
+            if (totalUsers > CAPACITY_USER_THRESHOLD) result.explanation.push(`Fabric F64+ capacity recommended because the total user count (${totalUsers}) exceeds the typical threshold (${CAPACITY_USER_THRESHOLD}) for cost-effectiveness and enables 'Unlimited Sharing' (viewers need only Free license).`);
+            if (needsF64Features) result.explanation.push(`Fabric F64+ capacity is needed because you selected F64-specific premium features: ${input.premiumFeatures.filter(f => ['ai', 'unlimitedSharing', 'reportServer'].includes(f)).map(getFeatureName).join(', ')}.`);
+            if (needsHugeModel) result.explanation.push(`Fabric F64+ capacity (likely F256+) needed due to the very large maximum model size selected ('${input.maxModelSize}').`);
             result.keyFeatures.push("Unlimited Sharing (Free license for viewers)", "Supports large datasets", "Advanced AI features", "48 Refreshes/day", "Report Server License (optional)");
             result.breakdown.push(`${input.numPublishers} x Power BI Pro (~$${PRO_COST}/user/month) for publishers.`);
             result.breakdown.push(`1 x Fabric F64+ SKU (Reservation recommended, ~$${F64_RESERVED_COST_APPROX}/month starting price). Select specific SKU based on exact model size/compute needs.`);
@@ -224,11 +255,11 @@ function calculateRecommendation(input) {
         else if (needsPremiumFeatures || modelExceedsProLimit) {
             result.recommendationText = "Power BI Premium Per User (PPU)";
             let currentPpuCost = input.hasE5 === 'yes' ? PPU_E5_COST : PPU_COST;
-            result.explanation.push("PPU recommended for accessing premium features or models larger than 1GB with moderate user counts.");
-             if (modelExceedsProLimit) result.explanation.push(`Required for model sizes between ${PRO_MODEL_LIMIT_GB}GB and ${PPU_MODEL_LIMIT_GB}GB.`);
-             if (needsPremiumFeatures) result.explanation.push(`Enables premium features like: ${input.premiumFeatures.join(', ')} without needing a full capacity.`);
+            result.explanation.push(`PPU recommended because premium features or larger models are needed, but user count (${totalUsers}) is below the threshold where F64+ capacity is typically required.`);
+             if (modelExceedsProLimit) result.explanation.push(`Specifically, the model size ('${input.maxModelSize}') exceeds the ${PRO_MODEL_LIMIT_GB}GB Pro license limit.`);
+             if (needsPremiumFeatures) result.explanation.push(`The following selected premium features require PPU or Capacity: ${input.premiumFeatures.map(getFeatureName).join(', ')}.`);
             result.keyFeatures.push("Supports large datasets (up to 100GB)", "Most Premium Features (Advanced Dataflows, Pipelines, XMLA, high refresh)", "48 Refreshes/day");
-            result.breakdown.push(`${totalUsers} x Power BI PPU (~$${currentPpuCost}/user/month - price depends on M365 E5 status).`);
+            result.breakdown.push(`${totalUsers} x Power BI PPU (~$${currentPpuCost}/user/month - cost is lower if users have M365 E5: You selected '${input.hasE5 || 'unknown'}').`);
             publisherLicense = "PPU"; // Publishers are covered by the PPU recommendation
             result.alternatives = `If user count grows significantly (> ${PPU_CAPACITY_THRESHOLD}-${CAPACITY_USER_THRESHOLD}), evaluate moving to Fabric F64+ capacity for potential cost savings and unlimited sharing.`;
         }
@@ -236,14 +267,14 @@ function calculateRecommendation(input) {
             // Check for Free license viability (very limited use case)
             if (input.numPublishers === 1 && input.numViewers === 0 && !modelExceedsProLimit && !needsPremiumFeatures && !input.embedding) {
                  result.recommendationText = "Power BI Free";
-                 result.explanation.push("A Free license is suitable only for individual use (publishing to 'My Workspace').");
-                 result.explanation.push("No sharing or collaboration is possible with a Free license.");
+                 result.explanation.push(`A Free license is suitable because input indicates only 1 user (${input.numPublishers} publisher, ${input.numViewers} viewers), no embedding, standard features, and model size ('${input.maxModelSize || '<1GB'}').`);
+                 result.explanation.push("This is for individual use (publishing to 'My Workspace') only. No sharing or collaboration is possible.");
                  result.keyFeatures.push("Create reports in Desktop", "Publish to personal 'My Workspace'", "Model size limit 1GB");
                  result.breakdown.push("1 x Power BI Free License (for the single user).");
                  publisherLicense = "Free";
             } else {
                 result.recommendationText = "Power BI Pro";
-                result.explanation.push("Power BI Pro licenses recommended for standard collaboration and sharing when premium features or large models are not required, and user count is moderate.");
+                result.explanation.push(`Power BI Pro licenses recommended as standard features are sufficient (no premium features selected, model size '${input.maxModelSize || '<1GB'}'), user count (${totalUsers}) is moderate, and sharing is needed.`);
                 result.keyFeatures.push("Sharing & Collaboration", "Publish to Shared Workspaces", "Build Power BI Apps");
                 result.breakdown.push(`${totalUsers} x Power BI Pro (~$${PRO_COST}/user/month).`);
                 // Publisher license is already Pro
@@ -253,24 +284,20 @@ function calculateRecommendation(input) {
 
     // --- Final Adjustments & Refinements ---
 
-    // Clear placeholder explanation if logic ran
-    if (result.recommendationText) {
-        // Remove the initial placeholder explanation if others were added
-        if (result.explanation.length > 1 && result.explanation[0] === "Please complete all steps.") {
-             result.explanation.shift();
+    // Ensure publisher breakdown is accurate and consistently placed
+    if (result.recommendationText && input.numPublishers > 0) {
+        let publisherLine = "";
+        if (publisherLicense === "Pro" && !result.recommendationText.toLowerCase().includes("ppu") && !result.recommendationText.toLowerCase().includes("free")) {
+            publisherLine = `${input.numPublishers} x Power BI Pro (~$${publisherLicenseCost}/user/month) for publishers.`;
         }
-         // Ensure publisher license details are correct if not PPU/Free main recommendation
-        if (publisherLicense === "Pro" && input.numPublishers > 0 && !result.recommendationText.toLowerCase().includes("ppu") && !result.recommendationText.toLowerCase().includes("free")) {
-             // Check if Pro publisher breakdown already added by specific paths
+        // PPU/Free cases usually have total user cost, publishers included implicitly or explicitly handled.
+
+        if (publisherLine) {
+             // Check if a similar line already exists to avoid duplicates
              let alreadyAdded = result.breakdown.some(line => line.includes("Pro") && line.includes("publisher"));
              if (!alreadyAdded) {
-                 result.breakdown.unshift(`${input.numPublishers} x Power BI Pro (~$${publisherLicenseCost}/user/month) for publishers.`);
-             }
-        } else if (publisherLicense === "Pro" && input.numPublishers > 0 && result.recommendationText.includes("Fabric F64+")) {
-            // Ensure it's added for F64 case too
-             let alreadyAdded = result.breakdown.some(line => line.includes("Pro") && line.includes("publisher"));
-             if (!alreadyAdded) {
-                  result.breakdown.unshift(`${input.numPublishers} x Power BI Pro (~$${publisherLicenseCost}/user/month) for publishers.`);
+                 // Add it consistently, e.g., at the beginning of the breakdown
+                 result.breakdown.unshift(publisherLine);
              }
         }
     }
