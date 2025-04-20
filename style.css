@@ -10,8 +10,9 @@ body {
     background-color: #f4f4f4; /* Light gray background */
     color: #333;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column; /* Stack logo and container vertically */
+    justify-content: flex-start; /* Align container to top */
+    align-items: center; /* Center container horizontally */
     min-height: 100vh;
     padding: 20px;
 }
@@ -31,6 +32,30 @@ h1 {
     margin-bottom: 30px;
     /* Potential Power BI Theme Color */
     /* color: #F2C811; */
+}
+
+#logo-container {
+    display: flex; /* Arrange image and text side-by-side */
+    align-items: center; /* Vertically align items in the middle */
+    margin: 20px; /* Spacing around the container */
+    align-self: flex-start; /* Align container to the left */
+}
+
+#logo-img {
+    /* display: block; */
+    /* margin: 0 auto 20px auto; */
+    /* margin: 20px; */ /* Moved margin to container */
+    max-width: 50px; /* Keep the reduced size */
+    height: auto;
+    /* align-self: flex-start; */ /* Alignment handled by container */
+    margin-right: 10px; /* Add space between logo and text */
+}
+
+#logo-text {
+    font-size: 1.8em; /* Adjust size as needed */
+    font-weight: bold;
+    color: #0078d4; /* Blue color, similar to buttons */
+    font-family: 'Times New Roman', Times, serif; /* Added serif font */
 }
 
 .wizard-step {
