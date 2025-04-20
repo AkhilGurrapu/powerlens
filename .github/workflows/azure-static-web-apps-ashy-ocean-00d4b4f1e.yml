@@ -22,9 +22,9 @@ jobs:
         with:
           submodules: true
           lfs: false
-      - name: Install OIDC Client from Core Package
+      - name: Install OIDC Client from Core Package # Note: This step might be unnecessary depending on runner environment
         run: npm install @actions/core@1.6.0 @actions/http-client
-      - name: Get Id Token
+      - name: Get Id Token # Note: This step might be unnecessary as SWA Deploy action v1 usually handles OIDC
         uses: actions/github-script@v6
         id: idtoken
         with:
@@ -42,8 +42,9 @@ jobs:
           # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
           app_location: "/" # App source code path
           api_location: "" # Api source code path - optional
-          output_location: "." # Built app content directory - optional
-          github_id_token: ${{ steps.idtoken.outputs.result }}
+          output_location: "" # Built app content directory - For static sites with no build, this should often be empty or match app_location
+          skip_app_build: true # Explicitly skip the build step for static content
+          github_id_token: ${{ steps.idtoken.outputs.result }} # This might be redundant if not using a specific OIDC flow
           ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:
@@ -56,3 +57,4 @@ jobs:
         uses: Azure/static-web-apps-deploy@v1
         with:
           action: "close"
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_ASHY_OCEAN_00D4B4F1E }} # Token is needed for close action too 
