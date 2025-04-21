@@ -484,6 +484,15 @@ function showResults() {
         </p>
 
         <p class="disclaimer">${recommendation.disclaimer}</p>
+
+        <hr>
+        <p><strong>Reference Links:</strong></p>
+        <ul>
+            <li><a href="https://www.microsoft.com/en-us/power-platform/products/power-bi/pricing" target="_blank" rel="noopener noreferrer">Power BI Pricing</a></li>
+            <li><a href="https://learn.microsoft.com/en-us/power-bi/consumer/end-user-license" target="_blank" rel="noopener noreferrer">Power BI License Types for Consumers</a></li>
+            <li><a href="https://learn.microsoft.com/en-us/fabric/enterprise/licenses" target="_blank" rel="noopener noreferrer">Microsoft Fabric Licenses</a></li>
+            <li><a href="https://azure.microsoft.com/en-us/pricing/details/microsoft-fabric/#overview" target="_blank" rel="noopener noreferrer">Microsoft Fabric Pricing Overview</a></li>
+        </ul>
     `;
 }
 
@@ -544,4 +553,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup checkbox group handler
     setupCheckboxes('premium-features', 'premiumFeatures');
+
+    // --- Info Modal & Accordion Setup ---
+    const infoBtn = document.getElementById('info-btn');
+    const infoModal = document.getElementById('info-modal');
+    const infoClose = document.getElementById('info-close');
+
+    if (infoBtn && infoModal && infoClose) {
+        // Open modal
+        infoBtn.addEventListener('click', () => {
+            infoModal.style.display = 'block';
+        });
+        // Close modal when X clicked
+        infoClose.addEventListener('click', () => {
+            infoModal.style.display = 'none';
+        });
+        // Close modal when clicking outside content
+        window.addEventListener('click', (event) => {
+            if (event.target === infoModal) {
+                infoModal.style.display = 'none';
+            }
+        });
+    }
+
+    // Accordion behaviour inside modal
+    document.querySelectorAll('.accordion-header').forEach(header => {
+        header.addEventListener('click', () => {
+            header.classList.toggle('active');
+            const body = header.nextElementSibling;
+            if (body) {
+                body.style.display = body.style.display === 'block' ? 'none' : 'block';
+            }
+        });
+    });
 }); 
